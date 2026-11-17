@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: team-management
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: STORAGE
+        sync: false        # postgres, sheets or file
+      - key: DATABASE_URL
+        sync: false        # only for STORAGE=postgres
+      - key: JWT_SECRET
+        generateValue: true

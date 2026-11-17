@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Team Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f4;--sf:#fff;--ink:#14202e;--mute:#5d6b7a;--line:#d9dfe6;--ac:#0b6b5c;--acs:#dff1ec;--warn:#a85a0a;--warns:#fdecd6;--bad:#b42318;--bads:#fde4e1;--ok:#1d6b34;--oks:#dff3e4;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1720;--sf:#18222e;--ink:#e6ecf2;--mute:#93a1b0;--line:#2a3745;--ac:#4fc3ad;--acs:#17332e;--warn:#f0a65a;--warns:#3a2a14;--bad:#f28b82;--bads:#3b1a18;--ok:#7fd49a;--oks:#173523;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1720;--sf:#18222e;--ink:#e6ecf2;--mute:#93a1b0;--line:#2a3745;--ac:#4fc3ad;--acs:#17332e;--warn:#f0a65a;--warns:#3a2a14;--bad:#f28b82;--bads:#3b1a18;--ok:#7fd49a;--oks:#173523;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+h1{font-size:1.5rem;margin:0 0 .25rem;letter-spacing:-.01em}h2{font-size:1.05rem;margin:0 0 .6rem}
+p{margin:.25rem 0}.mute{color:var(--mute)}.sm{font-size:.85rem}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:.55rem .95rem;font-weight:600;cursor:pointer}
+:root[data-theme="dark"] .btn{color:#06201b}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.bad{background:var(--bad);color:#fff}.btn.sm{padding:.3rem .65rem;font-size:.85rem}
+.card{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:1rem}
+.pill{display:inline-block;border-radius:99px;padding:.1rem .6rem;font-size:.78rem;font-weight:600;background:var(--line);white-space:nowrap}
+.pill.p-Planned,.pill.p-Pending{background:var(--acs);color:var(--ac)}.pill.p-ToBeValidated{background:var(--warns);color:var(--warn)}
+.pill.p-Completed{background:var(--oks);color:var(--ok)}.pill.p-Invalid,.pill.late{background:var(--bads);color:var(--bad)}
+label{display:block;font-weight:600;font-size:.85rem;margin:.7rem 0 .25rem}
+input,select,textarea{width:100%;background:var(--sf);border:1px solid var(--line);border-radius:8px;padding:.5rem .6rem}
+input[type=checkbox]{width:auto}
+.row{display:flex;gap:.75rem;flex-wrap:wrap}.row>*{flex:1 1 140px}
+.tbl{width:100%;border-collapse:collapse}.tbl th,.tbl td{text-align:left;padding:.55rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl th{font-size:.8rem;color:var(--mute);font-weight:600}.scroll{overflow-x:auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.75rem;margin:1rem 0}
+.stat b{display:block;font-size:1.7rem;line-height:1.1}
+.task{display:block;width:100%;text-align:left;cursor:pointer;margin-bottom:.6rem}
+.task .top{display:flex;justify-content:space-between;gap:.5rem;align-items:flex-start}
+.seg{display:flex;gap:.4rem;margin:.75rem 0;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--sf);border-radius:99px;padding:.3rem .8rem;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ac);color:#fff;border-color:var(--ac)}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--sf);color:var(--ink);width:min(560px,94vw);padding:1.1rem;max-height:90vh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.cm{border-left:3px solid var(--line);padding:.1rem .6rem;margin:.5rem 0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:.55rem 1rem;border-radius:8px;z-index:50}
+.login{max-width:420px;margin:8vh auto;padding:0 1rem}
+.login button.u{display:flex;justify-content:space-between;width:100%;margin-bottom:.5rem;text-align:left}
+/* MOBILE layout: bottom tab bar, single column */
+nav.side{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--sf);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+nav.side .brand,nav.side .who{display:none}
+nav.side button{flex:1;background:none;border:0;padding:.65rem .2rem;font-size:.72rem;color:var(--mute);cursor:pointer}
+nav.side button[aria-current=page]{color:var(--ac);font-weight:700}
+main{padding:1rem 1rem 6rem}
+/* DESKTOP layout: left sidebar, wide content */
+@media (min-width:900px){
+ nav.side{top:0;bottom:auto;right:auto;width:230px;height:100%;flex-direction:column;border-top:0;border-right:1px solid var(--line);padding:1.2rem .8rem}
+ nav.side .brand{display:block;font-weight:700;font-size:1.1rem;margin:0 .5rem 1rem}
+ nav.side .who{display:block;margin-top:auto;padding:.6rem .5rem;font-size:.85rem}
+ nav.side button{flex:0 0 auto;text-align:left;font-size:.95rem;padding:.6rem .7rem;border-radius:8px}
+ nav.side button[aria-current=page]{background:var(--acs)}
+ main{margin-left:230px;padding:2rem 2.5rem;max-width:1180px}
+ .toast{bottom:1.5rem}
+ .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+}
+.wiz{max-width:760px;margin:4vh auto;padding:0 1rem 4rem}.steps{display:flex;gap:.4rem;margin:1rem 0}.steps span{flex:1;height:4px;border-radius:2px;background:var(--line)}.steps span.on{background:var(--ac)}
+.opt{display:block;width:100%;text-align:left;cursor:pointer;margin-bottom:.6rem;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:.8rem 1rem}.opt[aria-pressed=true]{border-color:var(--ac);box-shadow:0 0 0 2px var(--acs)}
+.pill.rec{background:var(--acs);color:var(--ac)}.pill.no{background:var(--bads);color:var(--bad)}
+/* THEME: white, navy, orange, yellow + pastels */
+:root{--bg:#f5f7fc;--sf:#fff;--ink:#14234b;--mute:#5f6d95;--line:#e0e6f3;--ac:#1b2f6b;--acs:#e2e9ff;--on:#fff;--or:#f47c20;--ors:#ffe8d4;--ye:#f8c93a;--yes:#fff3c2;--lv:#ece6ff;--mi:#d8f4e6;--pk:#ffe0e6;--warn:#b45309;--warns:#fff3c2;--bad:#c62a47;--bads:#ffe0e6;--ok:#17724a;--oks:#d8f4e6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1330;--sf:#141f45;--ink:#eef2ff;--mute:#9aa8d4;--line:#26325f;--ac:#9db8ff;--acs:#1d2c5e;--on:#0b1330;--or:#ff9a4d;--ors:#4a2d17;--ye:#f8c93a;--yes:#463a12;--lv:#2c2760;--mi:#17402f;--pk:#4a1d2a;--warn:#ffc15a;--warns:#463a12;--bad:#ff8aa0;--bads:#4a1d2a;--ok:#7fe0b0;--oks:#17402f}}
+:root[data-theme="dark"]{--bg:#0b1330;--sf:#141f45;--ink:#eef2ff;--mute:#9aa8d4;--line:#26325f;--ac:#9db8ff;--acs:#1d2c5e;--on:#0b1330;--or:#ff9a4d;--ors:#4a2d17;--ye:#f8c93a;--yes:#463a12;--lv:#2c2760;--mi:#17402f;--pk:#4a1d2a;--warn:#ffc15a;--warns:#463a12;--bad:#ff8aa0;--bads:#4a1d2a;--ok:#7fe0b0;--oks:#17402f}
+body{background:radial-gradient(800px 380px at 105% -8%,var(--yes),transparent 60%),radial-gradient(700px 380px at -8% 0,var(--acs),transparent 58%),var(--bg);background-attachment:fixed}
+:focus-visible{outline:2px solid var(--or)}input:focus,select:focus,textarea:focus{outline:2px solid var(--or);border-color:var(--or)}
+h1{font-weight:700;color:var(--ink)}main>h1::after,.wiz h1::after,.login h1::after{content:"";display:block;width:44px;height:4px;border-radius:2px;background:var(--ye);margin-top:.4rem}
+.btn{background:var(--ac);color:var(--on)}.btn:hover{filter:brightness(1.1)}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn.bad{background:var(--bad);color:#fff}
+.card{border-radius:14px;box-shadow:0 1px 2px rgba(20,35,75,.05),0 8px 20px rgba(20,35,75,.05)}
+.stats .stat{border:0;color:var(--ink)}.stats .stat:nth-child(1){background:var(--acs)}.stats .stat:nth-child(2){background:var(--yes)}.stats .stat:nth-child(3){background:var(--ors)}.stats .stat:nth-child(4){background:var(--pk)}.stats .stat:nth-child(5){background:var(--mi)}
+.stat b{font-size:1.9rem;color:var(--ink)}.stats .stat:nth-child(4) b{color:var(--bad)}
+.tbl th{color:var(--ac)}
+.pill{background:var(--acs);color:var(--ac)}.pill.p-ScopeofWork{background:var(--acs);color:var(--ac)}.pill.p-Planned{background:var(--lv);color:var(--ink)}.pill.p-Pending{background:var(--yes);color:var(--ink)}.pill.p-ToBeValidated{background:var(--ors);color:var(--warn)}.pill.p-Completed{background:var(--mi);color:var(--ok)}.pill.p-Invalid,.pill.late{background:var(--pk);color:var(--bad)}
+.pill.rec{background:var(--ye);color:#14234b}.pill.no{background:var(--pk);color:var(--bad)}
+.task{border-left:5px solid var(--line)}.task:hover{border-color:var(--or)}.t-ScopeofWork{border-left-color:#9db8ff}.t-Planned{border-left-color:#b9a7ff}.t-Pending{border-left-color:var(--ye)}.t-ToBeValidated{border-left-color:var(--or)}.t-Completed{border-left-color:#5fcf9b}.t-Invalid{border-left-color:var(--bad)}
+.seg button[aria-pressed=true]{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.steps span.on{background:var(--or)}.opt[aria-pressed=true]{border-color:var(--or);box-shadow:0 0 0 3px var(--ors);background:var(--sf)}.opt{border-radius:14px}
+dialog{border-radius:16px}.toast{background:#14234b;color:#fff;border-left:4px solid var(--or)}
+nav.side button[aria-current=page]{color:var(--ac);font-weight:700;box-shadow:inset 0 3px 0 var(--or)}
+@media (min-width:900px){
+ nav.side{background:#14234b;border-right:0}
+ nav.side .brand{color:#fff}nav.side .brand::before{content:"";display:inline-block;width:11px;height:11px;border-radius:3px;background:var(--ye);margin-right:.55rem}
+ nav.side button{color:#c9d3f3;box-shadow:none}nav.side button:hover{background:rgba(255,255,255,.09)}
+ nav.side button[aria-current=page]{background:var(--or);color:#14234b;box-shadow:none}
+ nav.side .who{color:#c9d3f3;border-top:1px solid rgba(255,255,255,.15)}nav.side .who b{color:#fff}nav.side .who .mute{color:#aab6e0}
+ nav.side .who .btn.ghost{color:#fff!important;border-color:rgba(255,255,255,.35)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<dialog id="dlg"></dialog>
+<div id="toast" class="toast" hidden></div>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmt=t=>{if(!t)return'–';const d=new Date(t);return`${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hm=m=>`${Math.floor(m/60)}h ${pad(m%60)}m`;
+const KEY='tms.v1';let STATUS=null,tok=null,rev=0,saveT=0;
+const MAP={sheets:'sheets',db:'postgres',server:'postgres',local:'file'};
+const api=async(m,u,b)=>{const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{})},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||'Request failed'),{status:r.status,body:j});return j};
+async function pull(){const j=await api('GET','/api/state');const{me:m,rev:r,...st}=j;S=st;rev=r;me=S.employees.find(e=>e.name===m)||null}
+async function push(){if(S.demo||!tok)return;try{const j=await api('PUT','/api/state',{...S,rev});rev=j.rev}catch(e){if(e.status===409){toast('Someone else updated the data. Reloading.');await pull();render()}else toast('Could not save: '+e.message)}}
+let S,me=null,view='dashboard',tab='todo',mode='login',W={step:1,size:'',be:'',cfg:{},team:[]};
+const emp=(n,role,team,mgr,ss='09:00',se='18:00',l='13:00')=>({name:n,role,team,manager:mgr,shiftStart:ss,shiftEnd:se,lunch:l});
+function seed(){const n=Date.now(),h=36e5;return{setup:{done:true,size:'1-10',backend:'local'},demo:true,managerAccess:true,holidays:['2026-12-25','2027-01-26'],nextId:6,nextM:2,
+ employees:[emp('Aarav Mehta','Admin','Operations',''),emp('Neha Sharma','Manager','Sales','Aarav Mehta'),emp('Rohit Verma','Member','Sales','Neha Sharma'),emp('Priya Nair','Member','Operations','Aarav Mehta','10:00','19:00','14:00'),emp('Kabir Singh','Member','Operations','Aarav Mehta')],
+ masters:[{id:1,title:'Daily stock report',type:'Recurring',freq:'Daily',doer:'Priya Nair',validator:'Aarav Mehta',team:'Operations',lead:60,active:true}],
+ tasks:[
+ {id:1,mid:0,title:'Send Diwali offer to top 50 clients',desc:'Use the approved template and track replies.',type:'One-Time',team:'Sales',doer:'Rohit Verma',validator:'Neha Sharma',start:n-5*h,lead:240,end:n+20*h,status:'Pending',creator:'Neha Sharma',comments:[]},
+ {id:2,mid:0,title:'Update vendor price sheet',desc:'',type:'One-Time',team:'Operations',doer:'Kabir Singh',validator:'Aarav Mehta',start:n-30*h,lead:180,end:n-20*h,status:'Pending',creator:'Aarav Mehta',comments:[]},
+ {id:3,mid:0,title:'Weekly sales review deck',desc:'Include pipeline and lost deals.',type:'One-Time',team:'Sales',doer:'Rohit Verma',validator:'Neha Sharma',start:n-26*h,lead:300,end:n-2*h,status:'To Be Validated',creator:'Neha Sharma',comments:[{by:'Rohit Verma',t:n-3*h,x:'Deck is ready, please check slide 6.'}]},
+ {id:4,mid:0,title:'Audit warehouse bin labels',desc:'',type:'One-Time',team:'Operations',doer:'Priya Nair',validator:'Aarav Mehta',start:n+h,lead:480,end:n+60*h,status:'Scope of Work',creator:'Aarav Mehta',comments:[]},
+ {id:5,mid:0,title:'Close October invoices',desc:'',type:'One-Time',team:'Sales',doer:'Rohit Verma',validator:'Neha Sharma',start:n-90*h,lead:120,end:n-80*h,status:'Completed',done:n-82*h,creator:'Neha Sharma',comments:[]}]}}
+const empty=()=>({setup:null,managerAccess:true,holidays:[],nextId:1,nextM:1,employees:[],masters:[],tasks:[]});
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!S)S=empty();else if(!S.setup){S.setup={done:true,size:'1-10',backend:'local'};S.demo=true}}
+function save(){if(!STATUS){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}return}clearTimeout(saveT);saveT=setTimeout(push,300)}
+const E=n=>S.employees.find(e=>e.name===n)||{shiftStart:'09:00',shiftEnd:'18:00',lunch:''};
+/* Working-time engine: respects shift, lunch (30 min), holidays and Sat/Sun settings */
+function addWork(start,mins,e,sat,sun){const c=new Date(start),[sh,sm]=e.shiftStart.split(':').map(Number),[eh,em]=e.shiftEnd.split(':').map(Number),s0=sh*60+sm,e0=eh*60+em;let ls=null,le=null;
+ if(e.lunch){const[a,b]=e.lunch.split(':').map(Number),x=a*60+b;if(x>s0&&x+30<e0){ls=x;le=x+30}}
+ let g=0;while(mins>0&&g++<5000){const d=c.getDay();
+  if((d===0&&!sun)||(d===6&&!sat)||S.holidays.includes(iso(c))){c.setDate(c.getDate()+1);c.setHours(sh,sm,0,0);continue}
+  let m=c.getHours()*60+c.getMinutes();
+  if(m<s0){c.setHours(sh,sm,0,0);m=s0}
+  if(m>=e0){c.setDate(c.getDate()+1);c.setHours(sh,sm,0,0);continue}
+  if(ls!==null&&m>=ls&&m<le){c.setHours(Math.floor(le/60),le%60,0,0);continue}
+  const nb=(ls!==null&&m<ls)?ls:e0,av=nb-m;
+  if(av>=mins){c.setMinutes(c.getMinutes()+mins);mins=0}else{c.setMinutes(c.getMinutes()+av);mins-=av}}
+ return c.getTime()}
+const isAdmin=()=>me.role==='Admin',isMgr=()=>me.role==='Manager';
+const late=t=>t.end<Date.now()&&!['Completed','Invalid'].includes(t.status);
+const sc=s=>s.replace(/ /g,'');
+function visible(){if(isAdmin())return S.tasks;if(isMgr())return S.tasks.filter(t=>t.team===me.team||t.doer===me.name||t.validator===me.name||t.creator===me.name);
+ return S.tasks.filter(t=>t.doer===me.name||t.validator===me.name)}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.i);toast.i=setTimeout(()=>t.hidden=true,2500)}
+const NAV=[['dashboard','Dashboard'],['delegate','Delegate'],['mytasks','My tasks'],['master','Recurring'],['team','Team'],['settings','Settings']];
+function shell(body){return`<nav class="side" aria-label="Main"><div class="brand">Team Management</div>${NAV.filter(n=>allowed(n[0])).map(n=>`<button data-act="nav" data-v="${n[0]}" ${view===n[0]?'aria-current="page"':''}>${n[1]}</button>`).join('')}<div class="who"><b>${esc(me.name)}</b><br><span class="mute">${me.role} · ${esc(me.team)}</span><br><button class="btn ghost sm" data-act="logout" style="margin-top:.5rem;flex:none;padding:.3rem .7rem;font-size:.8rem;color:var(--ink)">Sign out</button></div></nav><main>${body}</main>`}
+function allowed(v){if(v==='settings'||v==='team'||v==='master')return isAdmin()||(isMgr()&&v!=='settings');return true}
+function render(){const a=$('#app');if(!S.setup||!S.setup.done){a.innerHTML=wizard();return}if(!me&&!S.demo){a.innerHTML=loginPage();return}if(!me){a.innerHTML=`<div class="login"><h1>Team Management</h1><p class="mute">Choose who you are. In a live setup this step is replaced by email or OTP login.</p><div style="margin-top:1rem">${S.employees.map(e=>`<button class="card u btn ghost" data-act="login" data-n="${esc(e.name)}"><span><b>${esc(e.name)}</b><br><span class="mute sm">${esc(e.team)}</span></span><span class="pill">${e.role}</span></button>`).join('')}</div></div>`;return}
+ a.innerHTML=shell(V[view]())}
+const SIZES=[['1-10','1–10 people','Small team or a single office'],['11-50','11–50 people','Growing team with a few managers'],['51-200','51–200 people','Several teams and departments'],['200+','200+ people','Large organisation with many daily tasks']];
+const NOTE={'1-10':'For a small team, Google Sheets is the simplest way to start.','11-50':'Sheets still works, but a database is safer once many people edit at once.','51-200':'Sheets slows down and hits Google’s request limits at this size. Use a database.','200+':'Use your own server or a managed database with backups.'};
+const BE={sheets:{n:'Google Sheets',d:'A Google Sheet in your own account. Free, and easy to view and fix by hand.',fit:{'1-10':'rec','11-50':'ok','51-200':'no','200+':'no'}},
+ db:{n:'Cloud database (Postgres or MySQL)',d:'Your own Supabase, Neon, AWS or similar database. Fast and safe for many users.',fit:{'1-10':'ok','11-50':'rec','51-200':'rec','200+':'ok'}},
+ server:{n:'Your own server',d:'Your company server or VM runs the backend and database. Full control.',fit:{'1-10':'ok','11-50':'ok','51-200':'ok','200+':'rec'}},
+ local:{n:'This browser only (trial)',d:'No backend. Data stays on this device. Good for trying the app.',fit:{'1-10':'ok','11-50':'no','51-200':'no','200+':'no'}}};
+const FIT={rec:['Recommended','rec'],ok:['Works',''],no:['Not advised','no']};
+const FIELDS={sheets:[['sheetUrl','Google Sheet link'],['svcEmail','Service account email']],db:[['engine','Database type'],['host','Host'],['port','Port'],['dbname','Database name'],['dbuser','User'],['dbpass','Password']],server:[['apiUrl','Server URL'],['apiKey','API key']],local:[]};
+const HELP={sheets:'Create an empty Google Sheet and share it with the service account email as Editor.',db:'Create an empty database and a user that can create tables.',server:'Your server must run the backend. Setup calls it with the key below.',local:'Nothing to connect. Data is saved in this browser only.'};
+const TABLES='meta, employees, masters, tasks and archive';
+const sha=async(s,p)=>{const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s+p));return[...new Uint8Array(d)].map(b=>pad(b.toString(16))).join('')};
+const steps=()=>`<div class="steps" role="img" aria-label="Step ${W.step} of 4">${[1,2,3,4].map(i=>`<span class="${i<=W.step?'on':''}"></span>`).join('')}</div>`;
+const back=()=>`<button class="btn ghost" data-act="wback">Back</button>`;
+const ENVH={sheets:'STORAGE=sheets\nSHEET_ID=<the ID in your Sheet link>\nGOOGLE_SERVICE_ACCOUNT_JSON=<service account key JSON>',db:'STORAGE=postgres\nDATABASE_URL=postgres://user:password@host:5432/dbname',server:'STORAGE=postgres\nDATABASE_URL=postgres://user:password@your-server:5432/dbname',local:'STORAGE=file\n(Data is lost when free Render redeploys.)'};
+function connForm(){return`<div class="card" style="margin:.2rem 0 1rem"><p class="sm mute">${HELP[W.be]}</p><p class="sm"><b>Set these in your server’s environment, then press Continue to test the connection:</b></p><pre style="white-space:pre-wrap;font-size:.8rem;background:var(--bg);padding:.6rem;border-radius:8px;overflow-x:auto">${esc(ENVH[W.be])}</pre><p class="sm mute">Credentials stay in your server. They never pass through this page. Setup creates: ${TABLES}.</p></div>`}
+function wizard(){let b='';
+ if(W.step===1)b=`<h1>Set up your workspace</h1><p class="mute">How many people will use it? We suggest where to keep your data. You own the storage.</p>${steps()}${SIZES.map(s=>`<button class="opt" data-act="wsize" data-v="${s[0]}" aria-pressed="${W.size===s[0]}"><b>${s[1]}</b><br><span class="mute sm">${s[2]}</span></button>`).join('')}<div class="row" style="margin-top:1rem"><button class="btn" data-act="wnext">Continue</button><button class="btn ghost" data-act="wdemo">Try with demo data</button></div>`;
+ else if(W.step===2)b=`<h1>Where should your data live?</h1><p class="mute">${NOTE[W.size]}</p>${steps()}${Object.keys(BE).map(k=>{const f=FIT[BE[k].fit[W.size]];return`<button class="opt" data-act="wbe" data-v="${k}" aria-pressed="${W.be===k}"><b>${BE[k].n}</b> <span class="pill ${f[1]}">${f[0]}</span><br><span class="mute sm">${BE[k].d}</span></button>`}).join('')}${W.be?connForm():''}<div class="row">${back()}<button class="btn" data-act="wnext">Continue</button></div>`;
+ else if(W.step===3)b=`<h1>Create the admin login</h1><p class="mute">The admin manages the team, holidays and settings.</p>${steps()}<div class="card"><label for="a-name">Full name</label><input id="a-name" autocomplete="name"><div class="row"><div><label for="a-email">Email</label><input id="a-email" type="email" autocomplete="email"></div><div><label for="a-mob">Mobile</label><input id="a-mob" type="tel"></div></div><label for="a-team">Your team or department</label><input id="a-team" placeholder="Management"><div class="row"><div><label for="a-pw">Password (8+ characters)</label><input id="a-pw" type="password" autocomplete="new-password"></div><div><label for="a-pw2">Confirm password</label><input id="a-pw2" type="password" autocomplete="new-password"></div></div></div><div class="row" style="margin-top:1rem">${back()}<button class="btn" data-act="wnext">Continue</button></div>`;
+ else{const all=[W.admin,...W.team];b=`<h1>Register your team</h1><p class="mute">Add the people who will sign in. They choose their own password the first time. You can add more later from the Team screen.</p>${steps()}<div class="card scroll"><table class="tbl"><tr><th>Name</th><th>Role</th><th>Email or mobile</th><th></th></tr>${all.map((m,i)=>`<tr><td>${esc(m.name)}</td><td>${m.role}</td><td>${esc(m.email||m.mobile)}</td><td>${i?`<button class="btn ghost sm" data-act="wdel" data-i="${i-1}">Remove</button>`:'<span class="pill">Admin</span>'}</td></tr>`).join('')}</table><p class="sm mute">${all.length} registered, planned for ${SIZES.find(s=>s[0]===W.size)[1]}.</p></div><div class="card" style="margin-top:1rem"><div class="row"><div><label for="n-name">Name</label><input id="n-name"></div><div><label for="n-team">Team</label><input id="n-team"></div></div><div class="row"><div><label for="n-email">Email</label><input id="n-email" type="email"></div><div><label for="n-mob">Mobile</label><input id="n-mob" type="tel"></div></div><div class="row"><div><label for="n-role">Role</label><select id="n-role"><option>Member</option><option>Manager</option></select></div><div><label for="n-mgr">Reports to</label><select id="n-mgr">${all.map(m=>`<option>${esc(m.name)}</option>`).join('')}</select></div></div><div class="row"><div><label for="n-ss">Shift start</label><input id="n-ss" type="time" value="09:00"></div><div><label for="n-se">Shift end</label><input id="n-se" type="time" value="18:00"></div><div><label for="n-l">Lunch start</label><input id="n-l" type="time" value="13:00"></div></div><button class="btn ghost" style="margin-top:1rem" data-act="wadd">Add to team</button></div><div class="row" style="margin-top:1rem">${back()}<button class="btn" data-act="wfinish">Finish setup</button></div>`}
+ return`<div class="wiz">${b}</div>`}
+function loginPage(){const L=mode==='login';return`<div class="login"><h1>Team Management</h1><p class="mute">${L?'Sign in with your email or mobile number.':'Choose a password for your registered email or mobile number.'}</p><div class="card" style="margin-top:1rem"><label for="l-id">Email or mobile</label><input id="l-id" autocomplete="username"><label for="l-pw">${L?'Password':'New password (8+ characters)'}</label><input id="l-pw" type="password" autocomplete="${L?'current-password':'new-password'}">${L?'':'<label for="l-pw2">Confirm password</label><input id="l-pw2" type="password" autocomplete="new-password">'}<button class="btn" style="margin-top:1rem;width:100%" data-act="${L?'dologin':'doactivate'}">${L?'Sign in':'Activate account'}</button><p style="text-align:center;margin-top:.8rem"><button class="btn ghost sm" data-act="lmode" data-m="${L?'activate':'login'}">${L?'First time here? Activate your account':'Back to sign in'}</button></p></div></div>`}
+function readMember(list){const n=$('#n-name').value.trim(),e=$('#n-email').value.trim().toLowerCase(),m=$('#n-mob').value.trim();
+ if(!n||(!e&&!m)){toast('Enter a name and an email or mobile number.');return null}
+ if(list.some(x=>x.name===n||(e&&(x.email||'').toLowerCase()===e)||(m&&x.mobile===m))){toast('That name, email or mobile is already registered.');return null}
+ return Object.assign(emp(n,$('#n-role').value,$('#n-team').value.trim()||'General',$('#n-mgr').value,$('#n-ss').value,$('#n-se').value,$('#n-l').value),{email:e,mobile:m})}
+async function wnext(){
+ if(W.step===1){if(!W.size){toast('Choose your team size.');return}W.step=2;render();return}
+ if(W.step===2){if(!W.be){toast('Choose where to keep your data.');return}
+  if(STATUS){try{const t=await api('POST','/api/setup/test');const ok=W.be==='server'?t.storage!=='sheets':t.storage===MAP[W.be];if(!ok){toast('This server uses '+t.storage+' storage. Set STORAGE='+MAP[W.be]+' and redeploy.');return}toast(t.message)}catch(e){toast('Connection failed: '+e.message);return}}
+  W.cfg={};W.step=3;render();return}
+ if(W.step===3){const n=$('#a-name').value.trim(),e=$('#a-email').value.trim().toLowerCase(),p=$('#a-pw').value;
+  if(!n||!/^\S+@\S+\.\S+$/.test(e)){toast('Enter your name and a valid email.');return}
+  if(p.length<8){toast('Use a password of at least 8 characters.');return}
+  if(p!==$('#a-pw2').value){toast('The passwords do not match.');return}
+  W.adminRaw={name:n,email:e,mobile:$('#a-mob').value.trim(),team:$('#a-team').value.trim()||'Management',password:p};const salt=crypto.randomUUID();W.admin=Object.assign(emp(n,'Admin',$('#a-team').value.trim()||'Management',''),{email:e,mobile:$('#a-mob').value.trim(),salt,hash:await sha(salt,p)});W.step=4;render()}}
+async function wfinish(){if(!STATUS){toast('Open this app from its server to finish setup.');return}
+ try{await api('POST','/api/setup',{size:W.size,backend:W.be,admin:W.adminRaw,team:W.team});STATUS.setup=true;S=empty();S.setup={done:true,size:W.size,backend:W.be};mode='login';W={step:1,size:'',be:'',cfg:{},team:[]};toast('Setup complete. Sign in as admin.');render()}catch(e){toast(e.message)}}
+async function authOk(j){tok=j.token;try{localStorage.setItem('tms.token',tok)}catch(e){}await pull();view='dashboard';render()}
+async function dologin(){try{await authOk(await api('POST','/api/login',{id:$('#l-id').value.trim(),password:$('#l-pw').value}))}catch(e){if(e.body&&e.body.activate){mode='activate';render()}toast(e.message)}}
+async function doactivate(){const p=$('#l-pw').value;if(p!==$('#l-pw2').value){toast('The passwords do not match.');return}try{await authOk(await api('POST','/api/activate',{id:$('#l-id').value.trim(),password:p}))}catch(e){toast(e.message)}}
+function WACT(a,b){
+ if(a==='wsize'){W.size=b.dataset.v;W.be='';W.cfg={};render();return 1}
+ if(a==='wbe'){W.be=b.dataset.v;render();return 1}
+ if(a==='wback'){W.step--;render();return 1}
+ if(a==='wdemo'){S=seed();save();render();return 1}
+ if(a==='lmode'){mode=b.dataset.m;render();return 1}
+ if(a==='wnext'){wnext();return 1}
+ if(a==='wadd'){const m=readMember([W.admin,...W.team]);if(m){W.team.push(m);render()}return 1}
+ if(a==='wdel'){W.team.splice(+b.dataset.i,1);render();return 1}
+ if(a==='wfinish'){wfinish();return 1}
+ if(a==='dologin'){dologin();return 1}
+ if(a==='doactivate'){doactivate();return 1}
+ return 0}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest('.login')){const b=document.querySelector('.login [data-act=dologin],.login [data-act=doactivate]');if(b)b.click()}});
+const V={
+dashboard(){const t=visible(),c=s=>t.filter(x=>x.status===s).length,od=t.filter(late).length,done=t.filter(x=>x.status==='Completed'),ot=done.filter(x=>x.done<=x.end).length;
+ const people=(isAdmin()?S.employees:S.employees.filter(e=>isMgr()?e.team===me.team:e.name===me.name));
+ return`<h1>Hello, ${esc(me.name.split(' ')[0])}</h1><p class="mute">${isAdmin()?'All teams':isMgr()?esc(me.team)+' team':'Your tasks'} at a glance.</p>
+ <div class="stats">${[['Scope of Work','To plan'],['Pending','In progress'],['To Be Validated','Awaiting review']].map(s=>`<div class="card stat"><b>${c(s[0])}</b>${s[1]}</div>`).join('')}<div class="card stat"><b style="color:var(--bad)">${od}</b>Overdue</div><div class="card stat"><b>${done.length?Math.round(ot/done.length*100)+'%':'–'}</b>Done on time</div></div>
+ <div class="card"><h2>Workload by person</h2><div class="scroll"><table class="tbl"><tr><th>Person</th><th>Open</th><th>Overdue</th><th>Hours assigned</th><th>Shift</th></tr>${people.map(p=>{const o=t.filter(x=>x.doer===p.name&&!['Completed','Invalid'].includes(x.status));return`<tr><td>${esc(p.name)}</td><td>${o.length}</td><td>${o.filter(late).length}</td><td>${hm(o.reduce((a,x)=>a+x.lead,0))}</td><td class="mute">${p.shiftStart}–${p.shiftEnd}</td></tr>`}).join('')}</table></div></div>`},
+delegate(){const targets=(isAdmin()||(isMgr()&&S.managerAccess))?S.employees:[me];
+ return`<h1>Delegate a task</h1><p class="mute">The end date is worked out from the doer’s shift, lunch and holidays.</p>${!isAdmin()&&!(isMgr()&&S.managerAccess)?'<p class="sm" style="color:var(--warn)">Assigning to others is turned off for you, so tasks go to yourself.</p>':''}
+ <div class="card" style="max-width:720px"><label for="f-title">Task title</label><input id="f-title" required><label for="f-desc">Description</label><textarea id="f-desc" rows="3"></textarea>
+ <div class="row"><div><label for="f-type">Type</label><select id="f-type" data-act="ftype"><option>One-Time</option><option>Recurring</option></select></div>
+ <div><label for="f-doer">Doer</label><select id="f-doer" data-act="fcalc">${targets.map(e=>`<option>${esc(e.name)}</option>`).join('')}</select></div>
+ <div><label for="f-val">Validator</label><select id="f-val">${S.employees.filter(e=>e.role!=='Member').map(e=>`<option>${esc(e.name)}</option>`).join('')}</select></div></div>
+ <div class="row"><div><label for="f-start">Start</label><input id="f-start" type="datetime-local" data-act="fcalc"></div><div><label for="f-lh">Lead time (hours)</label><input id="f-lh" type="number" min="0" value="4" data-act="fcalc"></div><div><label for="f-lm">Minutes</label><input id="f-lm" type="number" min="0" max="59" value="0" data-act="fcalc"></div></div>
+ <div class="row"><label style="font-weight:500"><input type="checkbox" id="f-sat" data-act="fcalc"> Include Saturday</label><label style="font-weight:500"><input type="checkbox" id="f-sun" data-act="fcalc"> Include Sunday</label></div>
+ <div id="f-rec" hidden class="row"><div><label for="f-freq">Repeats</label><select id="f-freq"><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div><div><label for="f-days">Generate for next (days)</label><input id="f-days" type="number" min="1" max="90" value="30"></div></div>
+ <p id="f-end" class="mute" style="margin-top:1rem">Expected end: –</p><button class="btn" data-act="submit">Assign task</button></div>`},
+mytasks(){const t=visible(),f={todo:t.filter(x=>x.doer===me.name&&!['To Be Validated','Completed','Invalid'].includes(x.status)),val:t.filter(x=>x.validator===me.name&&x.status==='To Be Validated'),done:t.filter(x=>x.doer===me.name&&['To Be Validated','Completed','Invalid'].includes(x.status))}[tab];
+ return`<h1>My tasks</h1><div class="seg" role="group" aria-label="Filter">${[['todo','To do'],['val','To validate'],['done','Submitted and done']].map(s=>`<button data-act="tab" data-t="${s[0]}" aria-pressed="${tab===s[0]}">${s[1]}</button>`).join('')}</div>
+ ${f.length?f.sort((a,b)=>a.end-b.end).map(card).join(''):'<div class="card mute">Nothing here. Delegate a task to get started.</div>'}`},
+master(){return`<h1>Recurring tasks</h1><p class="mute">Changing lead time updates every future task still at Scope of Work.</p><div class="card scroll"><table class="tbl"><tr><th>Title</th><th>Doer</th><th>Repeats</th><th>Lead</th><th></th></tr>${S.masters.map(m=>`<tr><td>${esc(m.title)}</td><td>${esc(m.doer)}</td><td>${m.freq}</td><td>${hm(m.lead)}</td><td style="white-space:nowrap">${m.active?`<button class="btn ghost sm" data-act="mlead" data-id="${m.id}">Edit lead time</button> <button class="btn ghost sm" data-act="moff" data-id="${m.id}">Stop</button>`:'<span class="pill">Stopped</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="mute">No recurring tasks yet.</td></tr>'}</table></div>`},
+team(){return`<h1>Team</h1><div class="card scroll"><table class="tbl"><tr><th>Name</th><th>Role</th><th>Team</th><th>Reports to</th><th>Shift</th><th>Lunch</th></tr>${S.employees.map(e=>`<tr><td>${esc(e.name)}</td><td>${e.role}</td><td>${esc(e.team)}</td><td>${esc(e.manager||'–')}</td><td>${e.shiftStart}–${e.shiftEnd}</td><td>${e.lunch||'–'}</td></tr>`).join('')}</table></div>
+ ${isAdmin()?`<div class="card" style="margin-top:1rem;max-width:720px"><h2>Add a team member</h2><div class="row"><div><label for="n-name">Name</label><input id="n-name"></div><div><label for="n-team">Team</label><input id="n-team"></div></div><div class="row"><div><label for="n-email">Email</label><input id="n-email" type="email"></div><div><label for="n-mob">Mobile</label><input id="n-mob" type="tel"></div></div><div class="row"><div><label for="n-role">Role</label><select id="n-role"><option>Member</option><option>Manager</option></select></div><div><label for="n-mgr">Reports to</label><select id="n-mgr">${S.employees.map(e=>`<option>${esc(e.name)}</option>`).join('')}</select></div></div><div class="row"><div><label for="n-ss">Shift start</label><input id="n-ss" type="time" value="09:00"></div><div><label for="n-se">Shift end</label><input id="n-se" type="time" value="18:00"></div><div><label for="n-l">Lunch start</label><input id="n-l" type="time" value="13:00"></div></div><button class="btn" style="margin-top:1rem" data-act="addemp">Add member</button></div>`:''}`},
+settings(){return`<h1>Settings</h1><div class="two"><div class="card"><h2>Manager access</h2><p class="mute">Let managers assign tasks to other people.</p><label style="font-weight:500"><input type="checkbox" ${S.managerAccess?'checked':''} data-act="macc"> Managers can assign to others</label></div>
+ <div class="card"><h2>Holidays</h2><p class="mute sm">Skipped when calculating end dates.</p>${S.holidays.map(h=>`<p>${h} <button class="btn ghost sm" data-act="delh" data-h="${h}">Remove</button></p>`).join('')}<div class="row" style="margin-top:.5rem"><input id="h-new" type="date"><button class="btn sm" data-act="addh" style="flex:0 0 auto">Add</button></div></div>
+ <div class="card"><h2>Appearance</h2><div class="seg">${['auto','light','dark'].map(m=>`<button data-act="theme" data-m="${m}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div></div>
+ <div class="card"><h2>Storage</h2><p class="mute sm">Backend: ${BE[S.setup.backend]?BE[S.setup.backend].n:'–'}. Team size: ${S.setup.size}.${S.demo?' You are in demo mode.':''}</p><button class="btn bad sm" data-act="reset">Erase and run setup again</button></div></div>`}};
+function card(t){return`<button class="card task t-${sc(t.status)}" data-act="open" data-id="${t.id}"><div class="top"><b>${esc(t.title)}</b><span class="pill p-${sc(t.status)}">${t.status}</span></div><div class="sm mute">${esc(t.doer)} · due ${fmt(t.end)} ${late(t)?'<span class="pill late">Overdue</span>':''}</div></button>`}
+function openTask(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;const isDoer=t.doer===me.name,isVal=t.validator===me.name||isAdmin();let acts='';
+ if(isDoer||isAdmin()){if(t.status==='Scope of Work')acts+=`<button class="btn" data-act="st" data-id="${id}" data-s="Planned">Plan it</button>`;
+  if(t.status==='Planned')acts+=`<button class="btn" data-act="st" data-id="${id}" data-s="Pending">Start work</button>`;
+  if(t.status==='Pending')acts+=`<button class="btn" data-act="st" data-id="${id}" data-s="To Be Validated">Submit for validation</button>`}
+ if(isVal&&t.status==='To Be Validated')acts+=`<button class="btn" data-act="st" data-id="${id}" data-s="Completed">Approve</button><span class="row" style="flex:0 0 auto"><input id="rh" type="number" min="1" value="2" style="width:70px" aria-label="Extra hours"><button class="btn ghost" data-act="reopen" data-id="${id}">Reopen with extra hours</button></span><button class="btn ghost" data-act="st" data-id="${id}" data-s="Invalid">Mark invalid</button>`;
+ const d=$('#dlg');d.innerHTML=`<h2>${esc(t.title)}</h2><p><span class="pill p-${sc(t.status)}">${t.status}</span> ${late(t)?'<span class="pill late">Overdue</span>':''}</p><p>${esc(t.desc)||'<span class="mute">No description.</span>'}</p>
+ <p class="sm mute">Doer ${esc(t.doer)} · Validator ${esc(t.validator)}<br>Starts ${fmt(t.start)} · Ends ${fmt(t.end)} · Lead ${hm(t.lead)}</p>
+ <div class="row" style="margin:.8rem 0;align-items:center">${acts}</div><h2>Comments</h2>${t.comments.map(c=>`<div class="cm"><b>${esc(c.by)}</b> <span class="mute sm">${fmt(c.t)}</span><br>${esc(c.x)}</div>`).join('')||'<p class="mute sm">No comments yet.</p>'}
+ <div class="row" style="margin-top:.6rem"><input id="cm" placeholder="Write a comment" aria-label="Comment"><button class="btn sm" data-act="comment" data-id="${id}" style="flex:0 0 auto">Post</button></div><div style="text-align:right;margin-top:1rem"><button class="btn ghost" data-act="close">Close</button></div>`;d.showModal()}
+function calc(){const st=$('#f-start');if(!st)return;if(!st.value){$('#f-end').textContent='Expected end: choose a start time';return}
+ const m=(+$('#f-lh').value||0)*60+(+$('#f-lm').value||0);$('#f-end').textContent='Expected end: '+fmt(addWork(new Date(st.value),m,E($('#f-doer').value),$('#f-sat').checked,$('#f-sun').checked))}
+function submit(){const title=$('#f-title').value.trim(),st=$('#f-start').value;if(!title||!st){toast('Add a title and a start time.');return}
+ const type=$('#f-type').value,doer=$('#f-doer').value,e=E(doer),lead=(+$('#f-lh').value||0)*60+(+$('#f-lm').value||0),sat=$('#f-sat').checked,sun=$('#f-sun').checked,val=$('#f-val').value,base={desc:$('#f-desc').value,type,team:e.team||me.team,doer,validator:val,lead,creator:me.name,comments:[],status:'Scope of Work'};let mid=0,n=0;
+ if(type==='Recurring'){mid=S.nextM++;S.masters.push({id:mid,title,type,freq:$('#f-freq').value,doer,validator:val,team:base.team,lead,active:true});
+  const first=new Date(st),days=+$('#f-days').value||30,fq=$('#f-freq').value;
+  for(let i=0;i<days;i++){const d=new Date(first);d.setDate(first.getDate()+i);const w=d.getDay();
+   if(fq==='Weekly'&&w!==first.getDay())continue;if(fq==='Monthly'&&d.getDate()!==first.getDate())continue;
+   if((w===0&&!sun)||(w===6&&!sat)||S.holidays.includes(iso(d)))continue;
+   S.tasks.push({...base,id:S.nextId++,mid,title,start:d.getTime(),end:addWork(d,lead,e,sat,sun)});n++}}
+ else{S.tasks.push({...base,id:S.nextId++,mid,title,start:new Date(st).getTime(),end:addWork(new Date(st),lead,e,sat,sun)});n=1}
+ save();toast(n+(n>1?' tasks assigned':' task assigned'));view='mytasks';tab=doer===me.name?'todo':'done';render()}
+document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');if(!b||b.tagName==='SELECT'||b.tagName==='INPUT'&&b.type!=='checkbox')return;const a=b.dataset.act,id=+b.dataset.id;
+ if(WACT(a,b))return;
+ if(a==='login'){me=S.employees.find(e=>e.name===b.dataset.n);try{localStorage.setItem('tms.me',me.name)}catch(e){}view='dashboard';render()}
+ else if(a==='logout'){me=null;tok=null;try{localStorage.removeItem('tms.token')}catch(e){}try{localStorage.removeItem('tms.me')}catch(e){}render()}
+ else if(a==='nav'){view=b.dataset.v;render();scrollTo(0,0);if(view==='delegate')calc()}
+ else if(a==='tab'){tab=b.dataset.t;render()}
+ else if(a==='open')openTask(id);else if(a==='close')$('#dlg').close();
+ else if(a==='st'){const t=S.tasks.find(x=>x.id===id);t.status=b.dataset.s;if(t.status==='Completed')t.done=Date.now();save();$('#dlg').close();toast('Marked '+t.status);render()}
+ else if(a==='reopen'){const t=S.tasks.find(x=>x.id===id),h=+$('#rh').value||1;t.status='Pending';t.lead+=h*60;t.end=addWork(Date.now(),h*60,E(t.doer),false,false);t.comments.push({by:me.name,t:Date.now(),x:'Reopened with '+h+' extra hours.'});save();$('#dlg').close();toast('Task reopened');render()}
+ else if(a==='comment'){const x=$('#cm').value.trim();if(!x)return;S.tasks.find(t=>t.id===id).comments.push({by:me.name,t:Date.now(),x});save();openTask(id)}
+ else if(a==='submit')submit();
+ else if(a==='mlead'){const v=prompt('New lead time in hours:');const h=parseFloat(v);if(!h||h<=0)return;const m=S.masters.find(x=>x.id===id);m.lead=Math.round(h*60);S.tasks.filter(t=>t.mid===id&&t.status==='Scope of Work').forEach(t=>{t.lead=m.lead;t.end=addWork(t.start,m.lead,E(t.doer),false,false)});save();toast('Lead time updated');render()}
+ else if(a==='moff'){S.masters.find(x=>x.id===id).active=false;S.tasks=S.tasks.filter(t=>!(t.mid===id&&t.status==='Scope of Work'));save();toast('Recurring task stopped');render()}
+ else if(a==='addemp'){const m=readMember(S.employees);if(!m)return;S.employees.push(m);save();toast('Member registered');render()}
+ else if(a==='macc'){S.managerAccess=b.checked;save();toast('Saved')}
+ else if(a==='addh'){const v=$('#h-new').value;if(v&&!S.holidays.includes(v)){S.holidays.push(v);S.holidays.sort();save();render()}}
+ else if(a==='delh'){S.holidays=S.holidays.filter(h=>h!==b.dataset.h);save();render()}
+ else if(a==='theme'){const m=b.dataset.m;if(m==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',m)}
+ else if(a==='reset'){if(STATUS&&!S.demo){toast('To reset a live workspace, clear its storage and redeploy.');return}if(confirm('Erase all data and run setup again?')){S=empty();W={step:1,size:'',be:'',cfg:{},team:[]};mode='login';save();me=null;try{localStorage.removeItem('tms.me')}catch(e){}render()}}});
+document.addEventListener('input',ev=>{const a=ev.target.dataset.act;if(a==='fcalc')calc()});
+document.addEventListener('change',ev=>{const a=ev.target.dataset.act;if(a==='fcalc')calc();if(a==='ftype')$('#f-rec').hidden=ev.target.value!=='Recurring'});
+(async()=>{try{STATUS=await api('GET','/api/status')}catch(e){STATUS=null}
+ if(!STATUS){load();if(!S.demo)S=seed();try{me=S.employees.find(e=>e.name===localStorage.getItem('tms.me'))||null}catch(e){}render();return}
+ S=empty();S.setup=STATUS.setup?{done:true}:null;
+ try{tok=localStorage.getItem('tms.token')}catch(e){}
+ if(STATUS.setup&&tok){try{await pull()}catch(e){tok=null}}
+ render();
+ setInterval(()=>{const t=(document.activeElement||{}).tagName;if(tok&&!S.demo&&!document.hidden&&!$('#dlg').open&&!/INPUT|TEXTAREA|SELECT/.test(t))pull().then(render).catch(()=>{})},30000)})();
+</script>
+</body>
+</html>
