@@ -147,23 +147,66 @@ function allowed(v){if(v==='settings'||v==='team'||v==='master')return isAdmin()
 function render(){const a=$('#app');if(!S.setup||!S.setup.done){a.innerHTML=wizard();return}if(!me&&!S.demo){a.innerHTML=loginPage();return}if(!me){a.innerHTML=`<div class="login"><h1>Team Management</h1><p class="mute">Choose who you are. In a live setup this step is replaced by email or OTP login.</p><div style="margin-top:1rem">${S.employees.map(e=>`<button class="card u btn ghost" data-act="login" data-n="${esc(e.name)}"><span><b>${esc(e.name)}</b><br><span class="mute sm">${esc(e.team)}</span></span><span class="pill">${e.role}</span></button>`).join('')}</div></div>`;return}
  a.innerHTML=shell(V[view]())}
 const SIZES=[['1-10','1–10 people','Small team or a single office'],['11-50','11–50 people','Growing team with a few managers'],['51-200','51–200 people','Several teams and departments'],['200+','200+ people','Large organisation with many daily tasks']];
-const NOTE={'1-10':'For a small team, Google Sheets is the simplest way to start.','11-50':'Sheets still works, but a database is safer once many people edit at once.','51-200':'Sheets slows down and hits Google’s request limits at this size. Use a database.','200+':'Use your own server or a managed database with backups.'};
-const BE={sheets:{n:'Google Sheets',d:'A Google Sheet in your own account. Free, and easy to view and fix by hand.',fit:{'1-10':'rec','11-50':'ok','51-200':'no','200+':'no'}},
- db:{n:'Cloud database (Postgres or MySQL)',d:'Your own Supabase, Neon, AWS or similar database. Fast and safe for many users.',fit:{'1-10':'ok','11-50':'rec','51-200':'rec','200+':'ok'}},
- server:{n:'Your own server',d:'Your company server or VM runs the backend and database. Full control.',fit:{'1-10':'ok','11-50':'ok','51-200':'ok','200+':'rec'}},
- local:{n:'This browser only (trial)',d:'No backend. Data stays on this device. Good for trying the app.',fit:{'1-10':'ok','11-50':'no','51-200':'no','200+':'no'}}};
-const FIT={rec:['Recommended','rec'],ok:['Works',''],no:['Not advised','no']};
-const FIELDS={sheets:[['sheetUrl','Google Sheet link'],['svcEmail','Service account email']],db:[['engine','Database type'],['host','Host'],['port','Port'],['dbname','Database name'],['dbuser','User'],['dbpass','Password']],server:[['apiUrl','Server URL'],['apiKey','API key']],local:[]};
-const HELP={sheets:'Create an empty Google Sheet and share it with the service account email as Editor.',db:'Create an empty database and a user that can create tables.',server:'Your server must run the backend. Setup calls it with the key below.',local:'Nothing to connect. Data is saved in this browser only.'};
-const TABLES='meta, employees, masters, tasks and archive';
+const NOTE={'1-10':'For small teams, Free PostgreSQL (Neon/Supabase) or Google Sheets is ideal.','11-50':'A PostgreSQL cloud database provides fast, reliable multi-user performance.','51-200':'Use a managed PostgreSQL database (Neon, Supabase, or AWS) for high concurrency.','200+':'Use a dedicated PostgreSQL server with automated backups.'};
+const BE={
+  db:{n:'Option 1: Free Cloud Database (Neon / Supabase)',tag:'100% Free · Recommended ($0/mo)',badge:'rec',d:'Connect a free PostgreSQL database. Data is safe forever even when Render sleeps or redeploys.'},
+  local:{n:'Option 2: Render Persistent Disk (Server Storage)',tag:'Starts at $7/mo + $0.25/GB Disk',badge:'no',d:'Saves files on server disk. Requires Render Starter plan ($7/mo) + Persistent Disk ($0.25/GB/mo).'},
+  sheets:{n:'Option 3: Google Sheets (Personal Drive)',tag:'Free for small teams ($0/mo)',badge:'rec',d:'Save tasks directly in your Google Sheet using Google Cloud Service Account credentials.'}
+};
 const sha=async(s,p)=>{const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s+p));return[...new Uint8Array(d)].map(b=>pad(b.toString(16))).join('')};
 const steps=()=>`<div class="steps" role="img" aria-label="Step ${W.step} of 4">${[1,2,3,4].map(i=>`<span class="${i<=W.step?'on':''}"></span>`).join('')}</div>`;
 const back=()=>`<button class="btn ghost" data-act="wback">Back</button>`;
-const ENVH={sheets:'STORAGE=sheets\nSHEET_ID=<the ID in your Sheet link>\nGOOGLE_SERVICE_ACCOUNT_JSON=<service account key JSON>',db:'STORAGE=postgres\nDATABASE_URL=postgres://user:password@host:5432/dbname',server:'STORAGE=postgres\nDATABASE_URL=postgres://user:password@your-server:5432/dbname',local:'STORAGE=file\n(Data is lost when free Render redeploys.)'};
-function connForm(){return`<div class="card" style="margin:.2rem 0 1rem"><p class="sm mute">${HELP[W.be]}</p><p class="sm"><b>Set these in your server’s environment, then press Continue to test the connection:</b></p><pre style="white-space:pre-wrap;font-size:.8rem;background:var(--bg);padding:.6rem;border-radius:8px;overflow-x:auto">${esc(ENVH[W.be])}</pre><p class="sm mute">Credentials stay in your server. They never pass through this page. Setup creates: ${TABLES}.</p></div>`}
+function connForm(){
+  if(W.be==='db'){
+    return`<div class="card" style="margin:.4rem 0 1rem;border-left:4px solid var(--ac)">
+      <h3 style="margin:0 0 .4rem;font-size:1rem;color:var(--ink)">Option 1: Free Cloud PostgreSQL Setup</h3>
+      <p class="sm mute">Get a 100% free database from <a href="https://neon.tech" target="_blank" rel="noopener" style="color:var(--or);font-weight:600">Neon.tech</a> or <a href="https://supabase.com" target="_blank" rel="noopener" style="color:var(--or);font-weight:600">Supabase.com</a> (Takes 1 min, no credit card required). Copy the connection link and paste it below:</p>
+      <label for="w-dburl">Postgres Connection URL</label>
+      <input id="w-dburl" placeholder="postgresql://user:password@ep-cool-db.neon.tech/neondb?sslmode=require" value="${esc(W.cfg.dbUrl||'')}" style="font-family:monospace;font-size:.85rem">
+      <div style="margin-top:.7rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn ghost sm" data-act="wtestconn" style="flex:0 0 auto">Test Connection</button>
+        <span id="w-testmsg" class="sm" style="font-weight:600;color:${W.tested?'var(--ok)':'var(--mute)'}">${esc(W.testMsg||'')}</span>
+      </div>
+      <p class="sm mute" style="margin-top:.6rem">🔒 Credentials stay private on your server. They are never committed to your code repository.</p>
+    </div>`;
+  }
+  if(W.be==='local'){
+    return`<div class="card" style="margin:.4rem 0 1rem;border-left:4px solid var(--warn)">
+      <h3 style="margin:0 0 .4rem;font-size:1rem;color:var(--ink)">Option 2: Render Persistent Disk (Pricing Details)</h3>
+      <div style="background:var(--bg);padding:.7rem;border-radius:8px;margin:.5rem 0;font-size:.85rem">
+        <p style="margin:0 0 .3rem">💵 <b>Render Starter Web Service:</b> <b>$7.00 / month</b> (Render’s Free tier does not support persistent disks)</p>
+        <p style="margin:0 0 .3rem">💾 <b>Render Persistent Disk:</b> <b>$0.25 / GB / month</b> (1 GB disk is enough for 100,000+ tasks)</p>
+        <p style="margin:0;font-weight:700;color:var(--warn)">💳 Total Cost on Render: ~$7.25 / month</p>
+      </div>
+      <p class="sm mute">No external database needed—all data is saved directly on Render’s attached disk.</p>
+      <div style="background:var(--bads);color:var(--bad);padding:.6rem;border-radius:8px;font-size:.82rem;margin-top:.5rem">
+        ⚠️ <b>Warning for Free Tier:</b> If you use this on Render’s Free tier without purchasing a $7 Starter plan and persistent disk, all data will be erased on every redeploy. For a 100% free solution, choose <b>Option 1 (Neon/Supabase)</b>.
+      </div>
+      <div style="margin-top:.7rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn ghost sm" data-act="wtestconn" style="flex:0 0 auto">Verify Local Disk</button>
+        <span id="w-testmsg" class="sm" style="font-weight:600;color:${W.tested?'var(--ok)':'var(--mute)'}">${esc(W.testMsg||'')}</span>
+      </div>
+    </div>`;
+  }
+  if(W.be==='sheets'){
+    return`<div class="card" style="margin:.4rem 0 1rem;border-left:4px solid var(--ac)">
+      <h3 style="margin:0 0 .4rem;font-size:1rem;color:var(--ink)">Option 3: Google Sheets Setup</h3>
+      <p class="sm mute">Create an empty Google Sheet, share it with your Google Service Account email as Editor, and enter the details below:</p>
+      <label for="w-sheetid">Google Sheet ID</label>
+      <input id="w-sheetid" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" value="${esc(W.cfg.sheetId||'')}">
+      <label for="w-creds">Google Service Account JSON Key</label>
+      <textarea id="w-creds" rows="3" placeholder='{"type": "service_account", ...}'>${esc(W.cfg.creds||'')}</textarea>
+      <div style="margin-top:.7rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn ghost sm" data-act="wtestconn" style="flex:0 0 auto">Test Google Sheet</button>
+        <span id="w-testmsg" class="sm" style="font-weight:600;color:${W.tested?'var(--ok)':'var(--mute)'}">${esc(W.testMsg||'')}</span>
+      </div>
+    </div>`;
+  }
+  return '';
+}
 function wizard(){let b='';
  if(W.step===1)b=`<h1>Set up your workspace</h1><p class="mute">How many people will use it? We suggest where to keep your data. You own the storage.</p>${steps()}${SIZES.map(s=>`<button class="opt" data-act="wsize" data-v="${s[0]}" aria-pressed="${W.size===s[0]}"><b>${s[1]}</b><br><span class="mute sm">${s[2]}</span></button>`).join('')}<div class="row" style="margin-top:1rem"><button class="btn" data-act="wnext">Continue</button><button class="btn ghost" data-act="wdemo">Try with demo data</button></div>`;
- else if(W.step===2)b=`<h1>Where should your data live?</h1><p class="mute">${NOTE[W.size]}</p>${steps()}${Object.keys(BE).map(k=>{const f=FIT[BE[k].fit[W.size]];return`<button class="opt" data-act="wbe" data-v="${k}" aria-pressed="${W.be===k}"><b>${BE[k].n}</b> <span class="pill ${f[1]}">${f[0]}</span><br><span class="mute sm">${BE[k].d}</span></button>`}).join('')}${W.be?connForm():''}<div class="row">${back()}<button class="btn" data-act="wnext">Continue</button></div>`;
+ else if(W.step===2)b=`<h1>Where should your data live?</h1><p class="mute">Pick the storage option that fits your team. All options keep your data 100% private to your organization.</p>${steps()}${Object.keys(BE).map(k=>{const item=BE[k];return`<button class="opt" data-act="wbe" data-v="${k}" aria-pressed="${W.be===k}"><b>${item.n}</b> <span class="pill ${item.badge==='rec'?'rec':'no'}">${item.tag}</span><br><span class="mute sm">${item.d}</span></button>`}).join('')}${W.be?connForm():''}<div class="row">${back()}<button class="btn" data-act="wnext">Continue</button></div>`;
  else if(W.step===3)b=`<h1>Create the admin login</h1><p class="mute">The admin manages the team, holidays and settings.</p>${steps()}<div class="card"><label for="a-name">Full name</label><input id="a-name" autocomplete="name"><div class="row"><div><label for="a-email">Email</label><input id="a-email" type="email" autocomplete="email"></div><div><label for="a-mob">Mobile</label><input id="a-mob" type="tel"></div></div><label for="a-team">Your team or department</label><input id="a-team" placeholder="Management"><div class="row"><div><label for="a-pw">Password (8+ characters)</label><input id="a-pw" type="password" autocomplete="new-password"></div><div><label for="a-pw2">Confirm password</label><input id="a-pw2" type="password" autocomplete="new-password"></div></div></div><div class="row" style="margin-top:1rem">${back()}<button class="btn" data-act="wnext">Continue</button></div>`;
  else{const all=[W.admin,...W.team];b=`<h1>Register your team</h1><p class="mute">Add the people who will sign in. They choose their own password the first time. You can add more later from the Team screen.</p>${steps()}<div class="card scroll"><table class="tbl"><tr><th>Name</th><th>Role</th><th>Email or mobile</th><th></th></tr>${all.map((m,i)=>`<tr><td>${esc(m.name)}</td><td>${m.role}</td><td>${esc(m.email||m.mobile)}</td><td>${i?`<button class="btn ghost sm" data-act="wdel" data-i="${i-1}">Remove</button>`:'<span class="pill">Admin</span>'}</td></tr>`).join('')}</table><p class="sm mute">${all.length} registered, planned for ${SIZES.find(s=>s[0]===W.size)[1]}.</p></div><div class="card" style="margin-top:1rem"><div class="row"><div><label for="n-name">Name</label><input id="n-name"></div><div><label for="n-team">Team</label><input id="n-team"></div></div><div class="row"><div><label for="n-email">Email</label><input id="n-email" type="email"></div><div><label for="n-mob">Mobile</label><input id="n-mob" type="tel"></div></div><div class="row"><div><label for="n-role">Role</label><select id="n-role"><option>Member</option><option>Manager</option></select></div><div><label for="n-mgr">Reports to</label><select id="n-mgr">${all.map(m=>`<option>${esc(m.name)}</option>`).join('')}</select></div></div><div class="row"><div><label for="n-ss">Shift start</label><input id="n-ss" type="time" value="09:00"></div><div><label for="n-se">Shift end</label><input id="n-se" type="time" value="18:00"></div><div><label for="n-l">Lunch start</label><input id="n-l" type="time" value="13:00"></div></div><button class="btn ghost" style="margin-top:1rem" data-act="wadd">Add to team</button></div><div class="row" style="margin-top:1rem">${back()}<button class="btn" data-act="wfinish">Finish setup</button></div>`}
  return`<div class="wiz">${b}</div>`}
@@ -174,26 +217,67 @@ function readMember(list){const n=$('#n-name').value.trim(),e=$('#n-email').valu
  return Object.assign(emp(n,$('#n-role').value,$('#n-team').value.trim()||'General',$('#n-mgr').value,$('#n-ss').value,$('#n-se').value,$('#n-l').value),{email:e,mobile:m})}
 async function wnext(){
  if(W.step===1){if(!W.size){toast('Choose your team size.');return}W.step=2;render();return}
- if(W.step===2){if(!W.be){toast('Choose where to keep your data.');return}
-  if(STATUS){try{const t=await api('POST','/api/setup/test');const ok=W.be==='server'?t.storage!=='sheets':t.storage===MAP[W.be];if(!ok){toast('This server uses '+t.storage+' storage. Set STORAGE='+MAP[W.be]+' and redeploy.');return}toast(t.message)}catch(e){toast('Connection failed: '+e.message);return}}
-  W.cfg={};W.step=3;render();return}
+ if(W.step===2){
+  if(!W.be){toast('Choose where to keep your data.');return}
+  if(W.be==='db'){
+    const u=($('#w-dburl')?$('#w-dburl').value.trim():W.cfg.dbUrl)||'';
+    W.cfg.dbUrl=u;
+    if(!u){toast('Please paste your Postgres Connection URL or click Test Connection.');return}
+  }
+  if(W.be==='sheets'){
+    const s=($('#w-sheetid')?$('#w-sheetid').value.trim():W.cfg.sheetId)||'';
+    const c=($('#w-creds')?$('#w-creds').value.trim():W.cfg.creds)||'';
+    W.cfg.sheetId=s;W.cfg.creds=c;
+  }
+  W.step=3;render();return}
  if(W.step===3){const n=$('#a-name').value.trim(),e=$('#a-email').value.trim().toLowerCase(),p=$('#a-pw').value;
   if(!n||!/^\S+@\S+\.\S+$/.test(e)){toast('Enter your name and a valid email.');return}
   if(p.length<8){toast('Use a password of at least 8 characters.');return}
   if(p!==$('#a-pw2').value){toast('The passwords do not match.');return}
   W.adminRaw={name:n,email:e,mobile:$('#a-mob').value.trim(),team:$('#a-team').value.trim()||'Management',password:p};const salt=crypto.randomUUID();W.admin=Object.assign(emp(n,'Admin',$('#a-team').value.trim()||'Management',''),{email:e,mobile:$('#a-mob').value.trim(),salt,hash:await sha(salt,p)});W.step=4;render()}}
 async function wfinish(){if(!STATUS){toast('Open this app from its server to finish setup.');return}
- try{await api('POST','/api/setup',{size:W.size,backend:W.be,admin:W.adminRaw,team:W.team});STATUS.setup=true;S=empty();S.setup={done:true,size:W.size,backend:W.be};mode='login';W={step:1,size:'',be:'',cfg:{},team:[]};toast('Setup complete. Sign in as admin.');render()}catch(e){toast(e.message)}}
+ try{
+  const storageConfig={};
+  if(W.be==='db'&&W.cfg.dbUrl)storageConfig.url=W.cfg.dbUrl;
+  if(W.be==='sheets'){storageConfig.sheetId=W.cfg.sheetId;storageConfig.creds=W.cfg.creds}
+  await api('POST','/api/setup',{size:W.size,backend:W.be,storageConfig,admin:W.adminRaw,team:W.team});
+  STATUS.setup=true;S=empty();S.setup={done:true,size:W.size,backend:W.be};mode='login';W={step:1,size:'',be:'',cfg:{},team:[]};
+  toast('Setup complete! Sign in with your admin credentials.');render()}catch(e){toast(e.message)}}
 async function authOk(j){tok=j.token;try{localStorage.setItem('tms.token',tok)}catch(e){}await pull();view='dashboard';render()}
 async function dologin(){try{await authOk(await api('POST','/api/login',{id:$('#l-id').value.trim(),password:$('#l-pw').value}))}catch(e){if(e.body&&e.body.activate){mode='activate';render()}toast(e.message)}}
 async function doactivate(){const p=$('#l-pw').value;if(p!==$('#l-pw2').value){toast('The passwords do not match.');return}try{await authOk(await api('POST','/api/activate',{id:$('#l-id').value.trim(),password:p}))}catch(e){toast(e.message)}}
 function WACT(a,b){
- if(a==='wsize'){W.size=b.dataset.v;W.be='';W.cfg={};render();return 1}
- if(a==='wbe'){W.be=b.dataset.v;render();return 1}
+ if(a==='wsize'){W.size=b.dataset.v;W.be='';W.cfg={};W.tested=false;W.testMsg='';render();return 1}
+ if(a==='wbe'){W.be=b.dataset.v;W.tested=false;W.testMsg='';render();return 1}
  if(a==='wback'){W.step--;render();return 1}
  if(a==='wdemo'){S=seed();save();render();return 1}
  if(a==='lmode'){mode=b.dataset.m;render();return 1}
  if(a==='wnext'){wnext();return 1}
+ if(a==='wtestconn'){
+  const msgEl=$('#w-testmsg');
+  if(msgEl){msgEl.style.color='var(--mute)';msgEl.textContent='Testing connection...'}
+  (async()=>{try{
+    let payload={kind:W.be};
+    if(W.be==='db'){
+      const u=$('#w-dburl')?$('#w-dburl').value.trim():'';
+      W.cfg.dbUrl=u;
+      if(!u){toast('Please enter a Database URL first.');if(msgEl)msgEl.textContent='';return}
+      payload.url=u;
+    }else if(W.be==='sheets'){
+      const s=$('#w-sheetid')?$('#w-sheetid').value.trim():'';
+      const c=$('#w-creds')?$('#w-creds').value.trim():'';
+      W.cfg.sheetId=s;W.cfg.creds=c;
+      payload.sheetId=s;payload.creds=c;
+    }
+    const res=await api('POST','/api/setup/test-connection',payload);
+    W.tested=true;W.testMsg='✓ '+(res.message||'Connected successfully!');
+    if(msgEl){msgEl.style.color='var(--ok)';msgEl.textContent=W.testMsg}
+  }catch(e){
+    W.tested=false;W.testMsg='✗ '+(e.message||'Connection failed');
+    if(msgEl){msgEl.style.color='var(--bad)';msgEl.textContent=W.testMsg}
+  }})();
+  return 1;
+ }
  if(a==='wadd'){const m=readMember([W.admin,...W.team]);if(m){W.team.push(m);render()}return 1}
  if(a==='wdel'){W.team.splice(+b.dataset.i,1);render();return 1}
  if(a==='wfinish'){wfinish();return 1}

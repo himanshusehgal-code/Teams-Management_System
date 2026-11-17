@@ -47,12 +47,33 @@ app.post('/api/setup/test', h(async (q, r) => {
   catch (e) { r.status(400).json({ error: e.message }); }
 }));
 
+app.post('/api/setup/test-connection', h(async (q, r) => {
+  if (isSetup(await getState())) return r.status(403).json({ error: 'Setup is already complete.' });
+  const { kind, url, sheetId, creds } = q.body || {};
+  try {
+    const msg = await store.testConnection(kind, { url, sheetId, googleServiceAccountJson: creds });
+    r.json({ ok: true, message: msg });
+  } catch (e) {
+    r.status(400).json({ error: e.message || 'Connection test failed.' });
+  }
+}));
+
 app.post('/api/setup', h(async (q, r) => {
   if (isSetup(await getState())) return r.status(403).json({ error: 'Setup is already complete.' });
-  const { size, backend, admin, team = [] } = q.body || {};
+  const { size, backend, storageConfig = {}, admin, team = [] } = q.body || {};
   if (!admin || !admin.name || !/^\S+@\S+\.\S+$/.test(admin.email || '') || String(admin.password || '').length < 8)
     return r.status(400).json({ error: 'Admin name, a valid email and a password of 8+ characters are required.' });
-  await store.init();
+  
+  if ((backend === 'db' || backend === 'postgres') && storageConfig.url) {
+    await store.configure('postgres', { url: storageConfig.url });
+  } else if (backend === 'sheets' && storageConfig.sheetId) {
+    await store.configure('sheets', { sheetId: storageConfig.sheetId, googleServiceAccountJson: storageConfig.creds });
+  } else if (backend === 'local' || backend === 'file') {
+    await store.configure('file', {});
+  } else {
+    await store.init();
+  }
+
   const mk = (e, role, pw) => {
     const o = { name: String(e.name).trim(), role, team: e.team || 'General', manager: e.manager || '', shiftStart: e.shiftStart || '09:00', shiftEnd: e.shiftEnd || '18:00', lunch: e.lunch || '', email: (e.email || '').toLowerCase(), mobile: e.mobile || '' };
     if (pw) { o.salt = crypto.randomBytes(16).toString('hex'); o.hash = hash(pw, o.salt); }

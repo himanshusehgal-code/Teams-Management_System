@@ -116,6 +116,21 @@ test.describe('TMS API Integration & RBAC Test Suite', () => {
     assert.match(res.json.message, /Using local file storage/i);
   });
 
+  test('POST /api/setup/test-connection verifies file and rejects broken postgres connection', async () => {
+    // File test
+    const fileRes = await request('POST', '/api/setup/test-connection', { kind: 'file' });
+    assert.equal(fileRes.status, 200);
+    assert.equal(fileRes.json.ok, true);
+
+    // Broken postgres URL
+    const badDbRes = await request('POST', '/api/setup/test-connection', {
+      kind: 'postgres',
+      url: 'postgresql://invalid_user:invalid_pass@127.0.0.1:54329/nonexistent'
+    });
+    assert.equal(badDbRes.status, 400);
+    assert.ok(badDbRes.json.error);
+  });
+
   test('POST /api/setup rejects invalid admin data', async () => {
     // Missing name
     let res = await request('POST', '/api/setup', {

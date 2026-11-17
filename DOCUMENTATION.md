@@ -72,8 +72,17 @@ When accessing an uninitialized workspace, the 4-step Setup Wizard launches auto
    - `51–200 people` (Recommended: Postgres database)
    - `200+ people` (Recommended: Dedicated Server / Postgres)
 2. **Storage Selection**:
-   - Choose your backend (`Google Sheets`, `Cloud database (Postgres)`, or `Local file (Trial)`).
-   - Press **Continue** to run an automated connection verification test.
+   - **Option 1: Free Cloud Database (Neon / Supabase)**:
+     - **Cost:** **$0 / month (100% Free Forever, No credit card needed)**.
+     - Just paste your PostgreSQL connection string (`postgresql://user:pass@ep-xyz.neon.tech/neondb?sslmode=require`) directly into the setup wizard.
+     - Click **Test Connection** to verify live in the browser. Credentials are stored securely on the server and never committed to code.
+   - **Option 2: Render Persistent Disk (Server Storage)**:
+     - **Cost:** **$7.00 / month** (Render Starter Plan) + **$0.25 / GB / month** for disk storage (Total ~$7.25/mo).
+     - *Why $7?* Render's Free tier does not support persistent disks. A paid Starter plan ($7/mo) is required to attach a persistent disk mount.
+     - *Warning:* Running Option 2 on Render's Free tier without a paid disk will erase all data whenever the service redeploys. For a $0 zero-cost solution, choose Option 1!
+   - **Option 3: Google Sheets**:
+     - **Cost:** **$0 / month**.
+     - Connects directly to a sheet in your Google Drive using a Google Service Account key.
 3. **Admin Account Creation**:
    - Enter Admin's Full Name, Email, Mobile number, Department, and a secure password (minimum 8 characters).
 4. **Register Initial Team**:
